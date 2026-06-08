@@ -1,0 +1,124 @@
+version: '3.9'
+
+services:
+  gateway-service:
+    build: ./services/gateway
+    ports:
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+    depends_on:
+      - ${AUTH_SERVICE_NAME}
+      - ${MARKET_SERVICE_NAME}
+      - ${TRADING_SERVICE_NAME}
+      - ${ASSET_SERVICE_NAME}
+      - ${WS_HUB_SERVICE_NAME}
+    environment:
+      PORT: ${GATEWAY_PORT}
+      AUTH_ADDR: ${AUTH_SERVICE_NAME}:${AUTH_PORT}
+      MARKET_ADDR: ${MARKET_SERVICE_NAME}:${MARKET_PORT}
+      TRADING_ADDR: ${TRADING_SERVICE_NAME}:${TRADING_PORT}
+      ASSET_ADDR: ${ASSET_SERVICE_NAME}:${ASSET_PORT}
+      WS_HUB_ADDR: ${WS_HUB_SERVICE_NAME}:${WS_HUB_PORT}
+
+  auth-service:
+    build: ./services/auth
+    ports:
+      - "${AUTH_PORT}:${AUTH_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
+      PORT: ${AUTH_PORT}
+
+  market-service:
+    build: ./services/market
+    ports:
+      - "${MARKET_PORT}:${MARKET_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
+      PORT: ${MARKET_PORT}
+
+  trading-service:
+    build: ./services/trading
+    ports:
+      - "${TRADING_PORT}:${TRADING_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
+      PORT: ${TRADING_PORT}
+
+  asset-service:
+    build: ./services/asset
+    ports:
+      - "${ASSET_PORT}:${ASSET_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
+      PORT: ${ASSET_PORT}
+
+  ws-hub-service:
+    build: ./services/ws_hub
+    ports:
+      - "${WS_HUB_PORT}:${WS_HUB_PORT}"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: ${WS_HUB_PORT}
+      REDIS_URL: ${REDIS_SERVICE_NAME}:${REDIS_PORT}
+
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  redis:
+    image: redis:8-alpine
+    restart: always
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+    - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate 
+    volumes:
+      - ./migrations:/migrations
+    command:
+      - -path=/migrations
+      - -database=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+  
+volumes:
+  postgres_data:
+  redis_data:

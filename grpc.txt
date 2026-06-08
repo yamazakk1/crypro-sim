@@ -1,0 +1,9 @@
+protoc --proto_path=api/proto --go_out=pkg/pb --go_opt=paths=source_relative --go-grpc_out=pkg/pb --go-grpc_opt=paths=source_relative api/proto/auth/auth.proto
+
+protoc --proto_path=api/proto --go_out=pkg/pb --go_opt=paths=source_relative --go-grpc_out=pkg/pb --go-grpc_out=paths=source_relative api/proto/asset/asset.proto
+что значит каждая строчка
+--proto_path	Корень для поиска .proto-файлов и импортов
+--go_out	Куда сложить структуры (.pb.go)
+--go-grpc_out	Куда сложить интерфейсы (_grpc.pb.go)
+--go_opt=paths=source_relative	Сохранить структуру папок
+Последний аргумент	Какой файл компилировать

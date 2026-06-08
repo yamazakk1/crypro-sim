@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Валюты | CryptoSim</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; padding: 20px; background: #f5f5f5; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        h1 { color: #333; margin: 0; }
+        .layout { display: flex; gap: 20px; }
+        .table-panel { flex: 1; min-width: 280px; background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .chart-panel { flex: 2; min-width: 400px; background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #eee; padding: 10px 8px; text-align: left; font-size: 14px; }
+        th { background: #4CAF50; color: white; border-radius: 4px 4px 0 0; }
+        tr { cursor: pointer; }
+        tr:hover { background: #e8f5e9; }
+        tr.selected { background: #c8e6c9; }
+        .up { color: #4CAF50; }
+        .down { color: #f44336; }
+        button { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 14px; }
+        .btn-buy { background: #4CAF50; }
+        .btn-sell { background: #f44336; }
+        .btn-back { background: #666; }
+        button:hover { opacity: 0.8; }
+        a { color: #2196F3; text-decoration: none; margin-left: 10px; }
+        .hidden { display: none; }
+        #chartContainer { width: 100%; height: 400px; position: relative; }
+        #chartSvg { width: 100%; height: 100%; }
+        #selectedSymbol { font-size: 18px; font-weight: bold; color: #333; }
+        .axis-label { font-size: 11px; fill: #888; }
+        .grid-line { stroke: #eee; stroke-width: 0.5; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .zoom-hint { font-size: 12px; color: #888; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 8px; padding: 25px; width: 350px; }
+        .modal-content h3 { margin: 0 0 15px 0; }
+        .modal-content p { margin: 8px 0; }
+        .modal-content input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .modal-content button { width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <h1>📊 CryptoSim</h1>
+        <div>
+            <span id="userInfo">Загрузка...</span>
+            <a id="adminLink" href="/admin.html" class="hidden">⚙️ Админ-панель</a>
+            <a href="/portfolio.html">💼 Портфель</a>
+            <a id="loginLink" href="/login.html">Войти</a>
+            <button id="logoutBtn" onclick="logout()" style="display:none;">Выйти</button>
+        </div>
+    </div>
+    
+    <div class="layout">
+        <div class="table-panel">
+            <h3>Валюты</h3>
+            <table id="assetsTable">
+                <tr><th>Символ</th><th>Цена</th><th>Изм.</th><th></th></tr>
+            </table>
+        </div>
+        <div class="chart-panel">
+            <div class="chart-header">
+                <div id="selectedSymbol">Выберите валюту</div>
+                <div class="zoom-hint">
+                    Диапазон: <span id="timeRange">1ч</span> | 🖱️ Колёсико для масштаба
+                </div>
+            </div>
+            <div id="chartContainer">
+                <svg id="chartSvg"></svg>
+            </div>
+        </div>
+    </div>
+
+    <div id="tradeModal" class="modal">
+        <div class="modal-content">
+            <h3>🟢 Покупка</h3>
+            <p>Валюта: <strong id="tradeSymbol"></strong></p>
+            <p>Цена: <strong id="tradePrice"></strong> USDT</p>
+            <input id="tradeQuantity" placeholder="Количество" type="number" step="any">
+            <p>Итого: <strong id="tradeTotal">0</strong> USDT</p>
+            <button class="btn-buy" onclick="executeTrade()">Купить</button>
+            <button class="btn-back" onclick="closeModal()" style="margin-top:5px;">Отмена</button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+        let priceMap = {};
+        let priceHistory = {};
+        let selectedAsset = null;
+        let currentRange = 3600;
+        let tradeAssetID = "", tradeAssetPrice = 0;
+
+        const ranges = [
+            { label: "1м", seconds: 60 }, { label: "5м", seconds: 300 }, { label: "15м", seconds: 900 },
+            { label: "30м", seconds: 1800 }, { label: "1ч", seconds: 3600 }, { label: "4ч", seconds: 14400 },
+            { label: "12ч", seconds: 43200 }, { label: "1д", seconds: 86400 }, { label: "7д", seconds: 604800 },
+        ];
+
+        function getRangeLabel(s) { const m = ranges.find(r => r.seconds === s); return m ? m.label : Math.floor(s/3600)+"ч"; }
+
+        function connectWebSocket() {
+            const ws = new WebSocket("ws://localhost:8085/ws");
+            ws.onmessage = (e) => {
+                try {
+                    const p = JSON.parse(e.data);
+                    priceMap[p.asset_id] = { price: parseFloat(p.price_usdt).toFixed(4), change: parseFloat(p.change_percent).toFixed(2) };
+                    updateTable();
+                    if (selectedAsset) updateChart();
+                } catch (ex) {}
+            };
+            ws.onclose = () => setTimeout(connectWebSocket, 3000);
+        }
+
+        async function loadAssets() {
+            try {
+                const resp = await fetch("/api/assets");
+                if (!resp.ok) return;
+                const data = await resp.json();
+                const table = document.getElementById("assetsTable");
+                while (table.rows.length > 1) table.deleteRow(1);
+                
+                data.assets.forEach(a => {
+                    const row = table.insertRow();
+                    row.setAttribute("data-id", a.id);
+                    row.onclick = (e) => { if (!e.target.closest("button")) selectAsset(a.id, a.symbol); };
+                    const p = priceMap[a.id] || { price: "—", change: "0.00" };
+                    const changeClass = parseFloat(p.change) >= 0 ? "up" : "down";
+                    row.innerHTML = `
+                        <td><strong>${a.symbol}</strong></td>
+                        <td>${p.price}</td>
+                        <td class="${changeClass}">${p.change}%</td>
+                        <td><button class="btn-buy" onclick="openBuy('${a.id}','${a.symbol}',${parseFloat(p.price)||0})" style="padding:4px 10px;font-size:12px;">Купить</button></td>
+                    `;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function updateTable() {
+            document.querySelectorAll("#assetsTable tr[data-id]").forEach(row => {
+                const id = row.getAttribute("data-id");
+                const p = priceMap[id];
+                if (p) {
+                    row.cells[1].textContent = p.price;
+                    row.cells[2].textContent = p.change + "%";
+                    row.cells[2].className = parseFloat(p.change) >= 0 ? "up" : "down";
+                    const btn = row.cells[3].querySelector("button");
+                    if (btn) btn.setAttribute("onclick", `openBuy('${id}','${btn.textContent}',${parseFloat(p.price)||0})`);
+                }
+            });
+        }
+
+        async function selectAsset(id, symbol) {
+            selectedAsset = id;
+            document.getElementById("selectedSymbol").textContent = symbol + " / USDT";
+            document.querySelectorAll("#assetsTable tr").forEach(r => r.classList.remove("selected"));
+            document.querySelector(`#assetsTable tr[data-id="${id}"]`)?.classList.add("selected");
+            await loadHistory();
+        }
+
+        async function loadHistory() {
+            if (!selectedAsset) return;
+            const to = new Date().toISOString();
+            const from = new Date(Date.now() - currentRange * 1000).toISOString();
+            try {
+                const resp = await fetch(`/api/market/prices/${selectedAsset}?from=${from}&to=${to}`);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                priceHistory[selectedAsset] = data.points || [];
+                drawChart();
+            } catch (e) {}
+        }
+
+        document.addEventListener("wheel", (e) => {
+            if (!selectedAsset) return;
+            if (!document.querySelector(".chart-panel").contains(e.target)) return;
+            e.preventDefault();
+            const idx = ranges.findIndex(r => r.seconds === currentRange);
+            if (e.deltaY < 0 && idx < ranges.length - 1) currentRange = ranges[idx + 1].seconds;
+            else if (e.deltaY > 0 && idx > 0) currentRange = ranges[idx - 1].seconds;
+            document.getElementById("timeRange").textContent = getRangeLabel(currentRange);
+            loadHistory();
+        }, { passive: false });
+
+        function formatTime(ts) {
+            const d = new Date(ts);
+            if (currentRange <= 3600) return d.getHours().toString().padStart(2,"0") + ":" + d.getMinutes().toString().padStart(2,"0");
+            if (currentRange <= 86400) return d.getHours().toString().padStart(2,"0") + ":" + d.getMinutes().toString().padStart(2,"0");
+            return d.getDate().toString().padStart(2,"0") + "." + (d.getMonth()+1).toString().padStart(2,"0");
+        }
+
+        function formatPrice(p) {
+            if (p >= 1000) return p.toFixed(0);
+            if (p >= 1) return p.toFixed(2);
+            if (p >= 0.01) return p.toFixed(4);
+            if (p >= 0.0001) return p.toFixed(6);
+            return p.toFixed(8);
+        }
+
+        function drawChart() {
+            if (!selectedAsset) return;
+            const points = priceHistory[selectedAsset] || [];
+            if (points.length < 2) { document.getElementById("chartSvg").innerHTML = ""; return; }
+            
+            const svg = document.getElementById("chartSvg");
+            const w = svg.clientWidth || 600, h = svg.clientHeight || 400;
+            const padLeft = 80, padRight = 20, padTop = 20, padBottom = 40;
+            
+            const prices = points.map(p => parseFloat(p.close));
+            const minPrice = Math.min(...prices) * 0.999, maxPrice = Math.max(...prices) * 1.001;
+            const range = maxPrice - minPrice || 1;
+            const scaleX = (i) => padLeft + (i / (points.length - 1)) * (w - padLeft - padRight);
+            const scaleY = (p) => h - padBottom - ((p - minPrice) / range) * (h - padTop - padBottom);
+            
+            let pathD = "";
+            points.forEach((p, i) => pathD += (i === 0 ? "M" : "L") + scaleX(i) + "," + scaleY(parseFloat(p.close)) + " ");
+            
+            const isUp = parseFloat(points[points.length-1].close) >= parseFloat(points[0].close);
+            const color = isUp ? "#4CAF50" : "#f44336";
+            let html = "";
+            
+            for (let i = 0; i <= 5; i++) {
+                const price = minPrice + (range * i / 5);
+                const y = scaleY(price);
+                html += `<line x1="${padLeft}" y1="${y}" x2="${w-padRight}" y2="${y}" class="grid-line"/>`;
+                html += `<text x="${padLeft-8}" y="${y+4}" text-anchor="end" class="axis-label">${formatPrice(price)}</text>`;
+            }
+            
+            const tl = Math.min(6, points.length);
+            for (let i = 0; i <= tl; i++) {
+                const idx = Math.floor(i * (points.length - 1) / tl);
+                html += `<text x="${scaleX(idx)}" y="${h-5}" text-anchor="middle" class="axis-label">${formatTime(points[idx].timestamp)}</text>`;
+            }
+            
+            html += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="2"/>`;
+            
+            const step = Math.max(1, Math.ceil(points.length / 20));
+            points.forEach((p, i) => {
+                if (i % step === 0 || i === points.length - 1)
+                    html += `<circle cx="${scaleX(i)}" cy="${scaleY(parseFloat(p.close))}" r="2" fill="${color}"/>`;
+            });
+            
+            const lp = parseFloat(points[points.length-1].close), lx = scaleX(points.length-1), ly = scaleY(lp);
+            html += `<rect x="${lx-45}" y="${ly-16}" width="90" height="18" rx="4" fill="${color}" opacity="0.9"/>`;
+            html += `<text x="${lx}" y="${ly-3}" text-anchor="middle" fill="white" font-size="11" font-weight="bold">${formatPrice(lp)}</text>`;
+            
+            svg.innerHTML = html;
+        }
+
+        function updateChart() {
+            if (!selectedAsset) return;
+            const p = priceMap[selectedAsset];
+            if (!p) return;
+            const points = priceHistory[selectedAsset] || [];
+            points.push({ close: p.price, timestamp: new Date().toISOString() });
+            if (points.length > 200) points.shift();
+            priceHistory[selectedAsset] = points;
+            drawChart();
+        }
+
+        function openBuy(assetID, symbol, price) {
+            if (!token) { window.location.href = "/login.html"; return; }
+            tradeAssetID = assetID;
+            tradeAssetPrice = price;
+            document.getElementById("tradeSymbol").textContent = symbol;
+            document.getElementById("tradePrice").textContent = price.toFixed(4);
+            document.getElementById("tradeQuantity").value = "";
+            document.getElementById("tradeTotal").textContent = "0";
+            document.getElementById("tradeModal").classList.add("active");
+        }
+
+        function closeModal() { document.getElementById("tradeModal").classList.remove("active"); }
+
+        document.getElementById("tradeQuantity").addEventListener("input", function() {
+            document.getElementById("tradeTotal").textContent = ((parseFloat(this.value) || 0) * tradeAssetPrice).toFixed(2);
+        });
+
+        async function executeTrade() {
+            const quantity = document.getElementById("tradeQuantity").value;
+            if (!quantity || parseFloat(quantity) <= 0) return;
+            const resp = await fetch("/api/trading/buy", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                body: JSON.stringify({ asset_id: tradeAssetID, quantity })
+            });
+            if (resp.ok) { closeModal(); alert("✅ Куплено!"); }
+            else { const d = await resp.json().catch(()=>({})); alert("❌ " + (d.error || "Ошибка")); }
+        }
+
+        async function checkUser() {
+            if (!token) { document.getElementById("userInfo").textContent = "Гость"; return; }
+            try {
+                const resp = await fetch("/getme", { headers: { "Authorization": "Bearer " + token } });
+                if (resp.ok) {
+                    const user = await resp.json();
+                    const balance = user.balance_usdt ? parseFloat(user.balance_usdt).toLocaleString() : "0";
+                    document.getElementById("userInfo").innerHTML = `💰 <strong>${balance} USDT</strong> | 👤 <a href="/portfolio.html" style="color:#333;text-decoration:underline;">${user.username}</a>`;
+                    document.getElementById("loginLink").style.display = "none";
+                    document.getElementById("logoutBtn").style.display = "inline";
+                    if (user.role === "admin") document.getElementById("adminLink").classList.remove("hidden");
+                }
+            } catch (e) {}
+        }
+
+        function logout() { localStorage.removeItem("token"); window.location.href = "/login.html"; }
+
+        window.addEventListener("resize", drawChart);
+        checkUser();
+        loadAssets();
+        connectWebSocket();
+    </script>
+</body>
+</html>

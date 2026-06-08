@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package market;
+
+option go_package = "crypto-simulator/pkg/pb/market";
+
+service MarketService {
+    rpc GetCurrentPrices(GetCurrentPricesRequest) returns (GetCurrentPricesResponse);
+    rpc GetPriceHistory(GetPriceHistoryRequest) returns (GetPriceHistoryResponse);
+}
+
+message PriceUpdate {
+    string asset_id = 1;
+    string symbol = 2;
+    string price_usdt = 3;
+    string change_usdt = 4;
+    string change_percent = 5;
+    string timestamp = 6;
+}
+
+message GetCurrentPricesRequest {}
+
+message GetCurrentPricesResponse {
+    repeated PriceUpdate prices = 1;
+}
+
+message GetPriceHistoryRequest {
+    string asset_id = 1;
+    string from = 2;
+    string to = 3;
+}
+
+message PricePoint {
+    string timestamp = 1;
+    string open = 2;
+    string high = 3;
+    string low = 4;
+    string close = 5;
+}
+
+message GetPriceHistoryResponse {
+    repeated PricePoint points = 1;
+}

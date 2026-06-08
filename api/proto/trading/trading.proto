@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package trading;
+
+option go_package = "crypto-simulator/pkg/pb/trading";
+
+service TradingService {
+    rpc GetPortfolio(GetPortfolioRequest) returns (PortfolioResponse);
+    rpc Buy(BuyRequest) returns (TransactionResponse);
+    rpc Sell(SellRequest) returns (TransactionResponse);
+    rpc GetTransactions(GetTransactionsRequest) returns (TransactionsResponse);
+    rpc AddBalance(AddBalanceRequest) returns (BalanceResponse);
+}
+
+message GetPortfolioRequest {
+    string user_id = 1;
+}
+
+message PortfolioItem {
+    string asset_id = 1;
+    string symbol = 2;
+    string quantity = 3;
+    string avg_buy_price = 4;
+    string current_price = 5;
+    string total_value = 6;
+    string profit_loss = 7;
+    string profit_loss_percent = 8;
+}
+
+message PortfolioResponse {
+    repeated PortfolioItem items = 1;
+    string total_value_usdt = 2;
+    string balance_usdt = 3;
+    string total_profit_loss = 4;
+}
+
+message BuyRequest {
+    string user_id = 1;
+    string asset_id = 2;
+    string quantity = 3;
+}
+
+message SellRequest {
+    string user_id = 1;
+    string asset_id = 2;
+    string quantity = 3;
+}
+
+message TransactionResponse {
+    string id = 1;
+    string type = 2;
+    string asset_symbol = 3;
+    string quantity = 4;
+    string asset_price = 5;
+    string total_usdt = 6;
+    string created_at = 7;
+}
+
+message GetTransactionsRequest {
+    string user_id = 1;
+}
+
+message TransactionItem {
+    string id = 1;
+    string type = 2;
+    string asset_symbol = 3;
+    string quantity = 4;
+    string asset_price = 5;
+    string total_usdt = 6;
+    string created_at = 7;
+}
+
+message TransactionsResponse {
+    repeated TransactionItem transactions = 1;
+}
+
+message AddBalanceRequest {
+    string user_id = 1;
+    string amount = 2;
+}
+
+message BalanceResponse {
+    string user_id = 1;
+    string balance_usdt = 2;
+}

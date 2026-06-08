@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация | CryptoSim</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
+        button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #45a049; }
+        .error { color: #f44336; margin-top: 10px; }
+        .success { color: #4CAF50; margin-top: 10px; }
+        a { color: #2196F3; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .links { text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <h1>📝 Регистрация</h1>
+    <input id="username" placeholder="Имя пользователя" autocomplete="off">
+    <input id="email" placeholder="Email" type="email" autocomplete="off">
+    <input id="password" type="password" placeholder="Пароль (мин. 8 символов, A-Z, a-z, 0-9, спецсимвол)">
+    <button onclick="register()">Зарегистрироваться</button>
+    <p id="result"></p>
+    <div class="links">
+        <p>Уже есть аккаунт? <a href="/login.html">Войти</a></p>
+    </div>
+    <script>
+        async function register() {
+            const result = document.getElementById("result");
+            result.className = "";
+            result.textContent = "";
+            
+            const username = document.getElementById("username").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            
+            if (!username || !email || !password) {
+                result.className = "error";
+                result.textContent = "❌ Все поля обязательны";
+                return;
+            }
+            
+            try {
+                const resp = await fetch("/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, email, password })
+                });
+                const data = await resp.json();
+                
+                if (resp.ok) {
+                    localStorage.setItem("token", data.token);
+                    result.className = "success";
+                    result.innerHTML = '✅ Регистрация успешна! <a href="/assets.html">Перейти к валютам</a>';
+                } else {
+                    result.className = "error";
+                    result.textContent = "❌ " + (data.error || "Ошибка регистрации");
+                }
+            } catch (e) {
+                result.className = "error";
+                result.textContent = "❌ Ошибка соединения с сервером";
+            }
+        }
+    </script>
+</body>
+</html>

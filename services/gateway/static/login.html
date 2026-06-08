@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Вход | CryptoSim</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
+        button { width: 100%; padding: 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0b7dda; }
+        .error { color: #f44336; margin-top: 10px; }
+        .success { color: #4CAF50; margin-top: 10px; }
+        a { color: #2196F3; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .links { text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <h1>🔑 Вход</h1>
+    <input id="email" placeholder="Email" type="email" autocomplete="off">
+    <input id="password" type="password" placeholder="Пароль">
+    <button onclick="login()">Войти</button>
+    <p id="result"></p>
+    <div class="links">
+        <p>Нет аккаунта? <a href="/register.html">Зарегистрироваться</a></p>
+    </div>
+    <script>
+        async function login() {
+            const result = document.getElementById("result");
+            result.className = "";
+            result.textContent = "";
+            
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            
+            if (!email || !password) {
+                result.className = "error";
+                result.textContent = "❌ Все поля обязательны";
+                return;
+            }
+            
+            try {
+                const resp = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await resp.json();
+                
+                if (resp.ok) {
+                    localStorage.setItem("token", data.token);
+                    result.className = "success";
+                    result.innerHTML = '✅ Вход выполнен! <a href="/assets.html">Перейти к валютам</a>';
+                } else {
+                    result.className = "error";
+                    result.textContent = "❌ " + (data.error || "Неверный email или пароль");
+                }
+            } catch (e) {
+                result.className = "error";
+                result.textContent = "❌ Ошибка соединения с сервером";
+            }
+        }
+    </script>
+</body>
+</html>

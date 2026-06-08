@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "crypto-simulator/pkg/pb/auth";
+
+enum Role {
+    ROLE_UNSPECIFIED = 0;
+    ROLE_USER = 1;
+    ROLE_ADMIN = 2;
+}
+
+service AuthService {
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc Login(LoginRequest) returns (LoginResponse);
+    rpc GetMe(GetMeRequest) returns (GetMeResponse);
+}
+
+message RegisterRequest{
+    string username = 1;
+    string email = 2;
+    string password = 3;
+}
+
+message RegisterResponse{
+    string token = 1;
+}
+
+message LoginRequest{
+    string email = 1;
+    string password = 2;
+}
+
+message LoginResponse{
+    string token = 1;
+}
+
+message GetMeRequest{
+    string userId = 1;
+}
+
+message GetMeResponse{
+    string username = 1;
+    string email = 2;
+    float balanceUsdt = 3;
+    string role = 4;
+}
