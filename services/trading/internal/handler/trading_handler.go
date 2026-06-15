@@ -2,10 +2,10 @@ package handler
 
 import (
 	"context"
-	"log"
-	"strconv"
+	"fmt"
 
 	pb "crypto-simulator/pkg/pb/trading"
+	"crypto-simulator/services/trading/internal/models"
 	"crypto-simulator/services/trading/internal/service"
 
 	"google.golang.org/grpc/codes"
@@ -14,16 +14,15 @@ import (
 
 type TradingHandler struct {
 	pb.UnimplementedTradingServiceServer
-	service *service.TradingService
+	svc *service.TradingService
 }
 
 func NewTradingHandler(svc *service.TradingService) *TradingHandler {
-	return &TradingHandler{service: svc}
+	return &TradingHandler{svc: svc}
 }
 
 func (h *TradingHandler) GetPortfolio(ctx context.Context, req *pb.GetPortfolioRequest) (*pb.PortfolioResponse, error) {
-	log.Printf("trading-handler: GetPortfolio: user=%s", req.UserId)
-	p, err := h.service.GetPortfolio(ctx, req.UserId)
+	p, err := h.svc.GetPortfolio(ctx, req.UserId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -33,66 +32,43 @@ func (h *TradingHandler) GetPortfolio(ctx context.Context, req *pb.GetPortfolioR
 		items = append(items, &pb.PortfolioItem{
 			AssetId:           item.AssetID,
 			Symbol:            item.Symbol,
-			Quantity:          strconv.FormatFloat(item.Quantity, 'f', 8, 64),
-			AvgBuyPrice:       strconv.FormatFloat(item.AvgBuyPrice, 'f', 6, 64),
-			CurrentPrice:      strconv.FormatFloat(item.CurrentPrice, 'f', 6, 64),
-			TotalValue:        strconv.FormatFloat(item.TotalValue, 'f', 2, 64),
-			ProfitLoss:        strconv.FormatFloat(item.ProfitLoss, 'f', 2, 64),
-			ProfitLossPercent: strconv.FormatFloat(item.ProfitLossPct, 'f', 2, 64),
+			Quantity:          fmt.Sprintf("%.8f", item.Quantity),
+			AvgBuyPrice:       fmt.Sprintf("%.6f", item.AvgBuyPrice),
+			CurrentPrice:      fmt.Sprintf("%.6f", item.CurrentPrice),
+			TotalValue:        fmt.Sprintf("%.2f", item.TotalValue),
+			ProfitLoss:        fmt.Sprintf("%.2f", item.ProfitLoss),
+			ProfitLossPercent: fmt.Sprintf("%.2f", item.ProfitLossPct),
 		})
 	}
 
 	return &pb.PortfolioResponse{
 		Items:           items,
-		TotalValueUsdt:  strconv.FormatFloat(p.TotalValue, 'f', 2, 64),
-		BalanceUsdt:     strconv.FormatFloat(p.BalanceUSDT, 'f', 2, 64),
-		TotalProfitLoss: strconv.FormatFloat(p.TotalProfitLoss, 'f', 2, 64),
+		TotalValueUsdt:  fmt.Sprintf("%.2f", p.TotalValue),
+		BalanceUsdt:     fmt.Sprintf("%.2f", p.BalanceUSDT),
+		TotalProfitLoss: fmt.Sprintf("%.2f", p.TotalProfitLoss),
 	}, nil
 }
 
 func (h *TradingHandler) Buy(ctx context.Context, req *pb.BuyRequest) (*pb.TransactionResponse, error) {
-	qty, _ := strconv.ParseFloat(req.Quantity, 64)
-	log.Printf("trading-handler: Buy: user=%s asset=%s qty=%.4f", req.UserId, req.AssetId, qty)
-
-	t, err := h.service.Buy(ctx, req.UserId, req.AssetId, qty)
+	qty := parseFloat(req.Quantity)
+	t, err := h.svc.Buy(ctx, req.UserId, req.AssetId, qty)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	return &pb.TransactionResponse{
-		Id:          t.ID,
-		Type:        t.Type,
-		AssetSymbol: t.AssetSymbol,
-		Quantity:    strconv.FormatFloat(t.Quantity, 'f', 8, 64),
-		AssetPrice:  strconv.FormatFloat(t.AssetPrice, 'f', 6, 64),
-		TotalUsdt:   strconv.FormatFloat(t.TotalUSDT, 'f', 2, 64),
-		CreatedAt:   t.CreatedAt,
-	}, nil
+	return toTxResponse(t), nil
 }
 
 func (h *TradingHandler) Sell(ctx context.Context, req *pb.SellRequest) (*pb.TransactionResponse, error) {
-	qty, _ := strconv.ParseFloat(req.Quantity, 64)
-	log.Printf("trading-handler: Sell: user=%s asset=%s qty=%.4f", req.UserId, req.AssetId, qty)
-
-	t, err := h.service.Sell(ctx, req.UserId, req.AssetId, qty)
+	qty := parseFloat(req.Quantity)
+	t, err := h.svc.Sell(ctx, req.UserId, req.AssetId, qty)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	return &pb.TransactionResponse{
-		Id:          t.ID,
-		Type:        t.Type,
-		AssetSymbol: t.AssetSymbol,
-		Quantity:    strconv.FormatFloat(t.Quantity, 'f', 8, 64),
-		AssetPrice:  strconv.FormatFloat(t.AssetPrice, 'f', 6, 64),
-		TotalUsdt:   strconv.FormatFloat(t.TotalUSDT, 'f', 2, 64),
-		CreatedAt:   t.CreatedAt,
-	}, nil
+	return toTxResponse(t), nil
 }
 
 func (h *TradingHandler) GetTransactions(ctx context.Context, req *pb.GetTransactionsRequest) (*pb.TransactionsResponse, error) {
-	log.Printf("trading-handler: GetTransactions: user=%s", req.UserId)
-	txs, err := h.service.GetTransactions(ctx, req.UserId)
+	txs, err := h.svc.GetTransactions(ctx, req.UserId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -103,27 +79,41 @@ func (h *TradingHandler) GetTransactions(ctx context.Context, req *pb.GetTransac
 			Id:          t.ID,
 			Type:        t.Type,
 			AssetSymbol: t.AssetSymbol,
-			Quantity:    strconv.FormatFloat(t.Quantity, 'f', 8, 64),
-			AssetPrice:  strconv.FormatFloat(t.AssetPrice, 'f', 6, 64),
-			TotalUsdt:   strconv.FormatFloat(t.TotalUSDT, 'f', 2, 64),
+			Quantity:    fmt.Sprintf("%.8f", t.Quantity),
+			AssetPrice:  fmt.Sprintf("%.6f", t.AssetPrice),
+			TotalUsdt:   fmt.Sprintf("%.2f", t.TotalUSDT),
 			CreatedAt:   t.CreatedAt,
 		})
 	}
-
 	return &pb.TransactionsResponse{Transactions: items}, nil
 }
 
 func (h *TradingHandler) AddBalance(ctx context.Context, req *pb.AddBalanceRequest) (*pb.BalanceResponse, error) {
-	amount, _ := strconv.ParseFloat(req.Amount, 64)
-	log.Printf("trading-handler: AddBalance: user=%s amount=%.2f", req.UserId, amount)
-
-	balance, err := h.service.AddBalance(ctx, req.UserId, amount)
+	amount := parseFloat(req.Amount)
+	balance, err := h.svc.AddBalance(ctx, req.UserId, amount)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
 	return &pb.BalanceResponse{
 		UserId:      req.UserId,
-		BalanceUsdt: strconv.FormatFloat(balance, 'f', 2, 64),
+		BalanceUsdt: fmt.Sprintf("%.2f", balance),
 	}, nil
+}
+
+func parseFloat(s string) float64 {
+	var f float64
+	fmt.Sscanf(s, "%f", &f)
+	return f
+}
+
+func toTxResponse(t *models.Transaction) *pb.TransactionResponse {
+	return &pb.TransactionResponse{
+		Id:          t.ID,
+		Type:        t.Type,
+		AssetSymbol: t.AssetSymbol,
+		Quantity:    fmt.Sprintf("%.8f", t.Quantity),
+		AssetPrice:  fmt.Sprintf("%.6f", t.AssetPrice),
+		TotalUsdt:   fmt.Sprintf("%.2f", t.TotalUSDT),
+		CreatedAt:   t.CreatedAt,
+	}
 }

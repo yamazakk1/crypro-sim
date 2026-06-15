@@ -4,43 +4,69 @@
     <meta charset="UTF-8">
     <title>Портфель | CryptoSim</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; max-width: 1100px; margin: 20px auto; padding: 20px; background: #f5f5f5; }
-        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-        h1 { color: #333; margin: 0; }
-        .cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .card { background: white; border-radius: 8px; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1; min-width: 150px; }
-        .card-label { font-size: 12px; color: #888; margin-bottom: 5px; }
-        .card-value { font-size: 22px; font-weight: bold; color: #333; }
-        .positive { color: #4CAF50; }
-        .negative { color: #f44336; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; font-size: 14px; }
-        th { background: #4CAF50; color: white; }
-        tr:hover { background: #f9f9f9; }
-        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 14px; }
-        .btn-buy { background: #4CAF50; }
-        .btn-sell { background: #f44336; }
-        .btn-cat { background: #ff9800; }
-        .btn-back { background: #666; }
-        button:hover { opacity: 0.8; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal.active { display: flex; }
-        .modal-content { background: white; border-radius: 8px; padding: 25px; width: 350px; }
-        .modal-content h3 { margin: 0 0 15px 0; }
-        .modal-content p { margin: 8px 0; }
-        .modal-content input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
-        .modal-content button { width: 100%; margin-top: 10px; }
-        .hidden { display: none; }
-        a { color: #2196F3; text-decoration: none; margin-left: 10px; }
-        .section-title { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; color: #333; }
-        .cat-container { text-align: center; margin: 20px 0; }
-        .cat-container img { width: 200px; border-radius: 8px; }
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-secondary: #8b949e;
+            --green: #3fb950;
+            --red: #f85149;
+            --blue: #58a6ff;
+            --orange: #d2991d;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
         
-        #accessDenied { display: none; background: #ffebee; border: 2px solid #f44336; border-radius: 8px; padding: 40px; text-align: center; margin: 50px 0; }
-        #accessDenied h2 { color: #f44336; font-size: 28px; }
-        #accessDenied a { color: #2196F3; font-size: 16px; }
-        #portfolioContent { display: none; }
+        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .header-links { display: flex; align-items: center; gap: 16px; font-size: 14px; }
+        .header-links a { color: var(--blue); text-decoration: none; }
+        .header-links a:hover { text-decoration: underline; }
+        .btn { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 14px; font-weight: 500; background: var(--surface); color: var(--text); }
+        .btn:hover { opacity: 0.85; }
+        .btn-green { background: #238636; border-color: #238636; color: white; }
+        .btn-red { background: #da3633; border-color: #da3633; color: white; }
+        .btn-orange { background: #9e6a03; border-color: #9e6a03; color: white; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+        
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+        .card-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-value { font-size: 28px; font-weight: 600; }
+        .positive { color: var(--green); }
+        .negative { color: var(--red); }
+
+        .section { margin-bottom: 32px; }
+        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+
+        table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 16px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border); }
+        th { background: #21262d; color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:hover { background: #1c2128; }
+        td { color: var(--text); }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; width: 380px; }
+        .modal-content h3 { font-size: 18px; margin-bottom: 16px; }
+        .modal-content p { margin-bottom: 8px; color: var(--text-secondary); }
+        .modal-content strong { color: var(--text); }
+        .modal-content input { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; margin: 8px 0; }
+        .modal-content input:focus { outline: none; border-color: var(--blue); }
+        .modal-content button { width: 100%; margin-top: 8px; }
+
+        #accessDenied { display: none; text-align: center; padding: 80px 20px; }
+        #accessDenied h2 { font-size: 32px; color: var(--red); margin-bottom: 16px; }
+        #accessDenied p { color: var(--text-secondary); margin-bottom: 24px; }
+        #accessDenied a { color: var(--blue); }
+
+        .cat-container { text-align: center; margin: 16px 0; }
+        .cat-container img { width: 180px; border-radius: 8px; }
+        .hidden { display: none; }
+
+        .brand { font-weight: 700; font-size: 18px; color: var(--green); }
     </style>
 </head>
 <body>
@@ -51,37 +77,52 @@
     </div>
 
     <div id="portfolioContent">
-        <div class="header-bar">
-            <h1>💼 Мой портфель</h1>
-            <div>
-                <span id="userInfo">Загрузка...</span>
-                <a href="/assets.html">📊 Рынок</a>
-                <a id="adminLink" href="/admin.html" class="hidden">⚙️ Админ-панель</a>
-                <button id="logoutBtn" onclick="logout()" style="display:none;">Выйти</button>
+        <div class="header">
+            <h1><span class="brand">CryptoSim</span> · Портфель</h1>
+            <div class="header-links">
+                <span id="userInfo" style="color:var(--text-secondary);"></span>
+                <a href="/assets.html">Рынок</a>
+                <a id="adminLink" href="/admin.html" class="hidden">Админ</a>
+                <button id="logoutBtn" class="btn" onclick="logout()" style="display:none;">Выйти</button>
             </div>
         </div>
 
-        <div class="cards">
-            <div class="card"><div class="card-label">💰 Баланс USDT</div><div class="card-value" id="balance">0</div></div>
-            <div class="card"><div class="card-label">📊 Стоимость портфеля</div><div class="card-value" id="totalValue">0</div></div>
-            <div class="card"><div class="card-label">📈 Прибыль / Убыток</div><div class="card-value" id="totalPnL">0</div></div>
+        <div class="container">
+            <div class="cards">
+                <div class="card">
+                    <div class="card-label">Баланс USDT</div>
+                    <div class="card-value" id="balance" style="color:var(--text);">0</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Стоимость портфеля</div>
+                    <div class="card-value" id="totalValue" style="color:var(--text);">0</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Прибыль / Убыток</div>
+                    <div class="card-value" id="totalPnL">0</div>
+                </div>
+            </div>
+
+            <button class="btn btn-orange" onclick="showCat()">🐱 Пополнить (реклама)</button>
+            <div id="catContainer" class="cat-container hidden">
+                <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" alt="Котик">
+                <p style="color:var(--text-secondary);margin-top:8px;">+100 USDT за просмотр!</p>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Активы</div>
+                <table id="portfolioTable">
+                    <tr><th>Символ</th><th>Кол-во</th><th>Ср. цена</th><th>Тек. цена</th><th>Стоимость</th><th>P&L</th><th></th></tr>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-title">История транзакций</div>
+                <table id="txTable">
+                    <tr><th>Тип</th><th>Валюта</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Время</th></tr>
+                </table>
+            </div>
         </div>
-
-        <button class="btn-cat" onclick="showCat()">🐱 Пополнить (посмотреть рекламу)</button>
-        <div id="catContainer" class="cat-container hidden">
-            <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" alt="Котик">
-            <p>Спасибо за просмотр! +100 USDT</p>
-        </div>
-
-        <div class="section-title">📋 Мои активы</div>
-        <table id="portfolioTable">
-            <tr><th>Символ</th><th>Количество</th><th>Ср. цена</th><th>Тек. цена</th><th>Стоимость</th><th>P&L</th><th>Действия</th></tr>
-        </table>
-
-        <div class="section-title">📜 История транзакций</div>
-        <table id="txTable">
-            <tr><th>Тип</th><th>Валюта</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Время</th></tr>
-        </table>
     </div>
 
     <div id="tradeModal" class="modal">
@@ -90,161 +131,191 @@
             <p>Валюта: <strong id="tradeSymbol"></strong></p>
             <p>Цена: <strong id="tradePrice"></strong> USDT</p>
             <input id="tradeQuantity" placeholder="Количество" type="number" step="any">
-            <p>Итого: <strong id="tradeTotal">0</strong> USDT</p>
-            <button id="tradeBtn" class="btn-sell" onclick="executeTrade()">Продать</button>
-            <button class="btn-back" onclick="closeModal()" style="margin-top:5px;">Отмена</button>
+            <p>Итого: <strong id="tradeTotal" style="color:var(--text);">0</strong> USDT</p>
+            <button id="tradeBtn" class="btn btn-red" onclick="executeTrade()">Продать</button>
+            <button class="btn" onclick="closeModal()" style="margin-top:6px;">Отмена</button>
         </div>
     </div>
 
     <script>
-        const token = localStorage.getItem("token");
-        let tradeType = "sell", tradeAssetID = "", tradeAssetPrice = 0;
+    const token = localStorage.getItem("token");
+    let tradeType = "sell", tradeAssetID = "", tradeAssetPrice = 0;
+    let portfolioData = null;
 
-        async function checkAccess() {
-            if (!token) { showDenied(); return; }
+    // WebSocket для real-time обновления
+    function connectWS() {
+        const ws = new WebSocket("ws://localhost:8085/ws");
+        ws.onmessage = (e) => {
             try {
-                const resp = await fetch("/getme", { headers: { "Authorization": "Bearer " + token } });
-                if (!resp.ok) { localStorage.removeItem("token"); showDenied(); return; }
-                const user = await resp.json();
-                document.getElementById("userInfo").textContent = `👤 ${user.username}`;
-                document.getElementById("logoutBtn").style.display = "inline";
-                if (user.role === "admin") document.getElementById("adminLink").classList.remove("hidden");
-                showPortfolio();
-                loadPortfolio();
-                loadTransactions();
-            } catch (e) { showDenied(); }
-        }
-
-        function showDenied() {
-            document.getElementById("accessDenied").style.display = "block";
-            document.getElementById("portfolioContent").style.display = "none";
-        }
-        function showPortfolio() {
-            document.getElementById("accessDenied").style.display = "none";
-            document.getElementById("portfolioContent").style.display = "block";
-        }
-
-        async function loadPortfolio() {
-            try {
-                const resp = await fetch("/api/trading/portfolio", { headers: { "Authorization": "Bearer " + token } });
-                if (!resp.ok) return;
-                const data = await resp.json();
-
-                const bal = parseFloat(data.balanceUsdt) || 0;
-                const tv = parseFloat(data.totalValueUsdt) || 0;
-                const pnl = parseFloat(data.totalProfitLoss) || 0;
-
-                document.getElementById("balance").textContent = bal.toLocaleString();
-                document.getElementById("totalValue").textContent = tv.toLocaleString();
-                document.getElementById("totalPnL").textContent = (pnl >= 0 ? "+" : "") + pnl.toLocaleString();
-                document.getElementById("totalPnL").className = "card-value " + (pnl >= 0 ? "positive" : "negative");
-
-                const table = document.getElementById("portfolioTable");
-                while (table.rows.length > 1) table.deleteRow(1);
-
-                if (data.items) {
-                    data.items.forEach(item => {
-                        const row = table.insertRow();
-                        const qty = parseFloat(item.quantity) || 0;
-                        const avg = parseFloat(item.avgBuyPrice) || 0;
-                        const cur = parseFloat(item.currentPrice) || 0;
-                        const val = parseFloat(item.totalValue) || 0;
-                        const pl = parseFloat(item.profitLoss) || 0;
-                        const plp = parseFloat(item.profitLossPercent) || 0;
-                        const pnlClass = pl >= 0 ? "positive" : "negative";
-                        row.innerHTML = `
-                            <td><strong>${item.symbol}</strong></td>
-                            <td>${qty.toFixed(6)}</td>
-                            <td>${avg.toFixed(4)}</td>
-                            <td>${cur.toFixed(4)}</td>
-                            <td>${val.toFixed(2)}</td>
-                            <td class="${pnlClass}">${pl.toFixed(2)} (${plp.toFixed(2)}%)</td>
-                            <td><button class="btn-sell" onclick="openSell('${item.assetId}','${item.symbol}',${cur})">Продать</button></td>
-                        `;
+                const p = JSON.parse(e.data);
+                if (portfolioData && portfolioData.items) {
+                    let changed = false;
+                    portfolioData.items.forEach(item => {
+                        if (item.asset_id === p.asset_id) {
+                            item.current_price = parseFloat(p.price_usdt);
+                            changed = true;
+                        }
                     });
+                    if (changed) renderPortfolio();
                 }
-            } catch (e) { console.error(e); }
-        }
+            } catch(ex) {}
+        };
+        ws.onclose = () => setTimeout(connectWS, 3000);
+    }
 
-        async function loadTransactions() {
-            try {
-                const resp = await fetch("/api/trading/transactions", { headers: { "Authorization": "Bearer " + token } });
-                if (!resp.ok) return;
-                const data = await resp.json();
+    async function checkAccess() {
+        if (!token) { showDenied(); return; }
+        try {
+            const resp = await fetch("/getme", { headers: { "Authorization": "Bearer " + token } });
+            if (!resp.ok) { localStorage.removeItem("token"); showDenied(); return; }
+            const user = await resp.json();
+            document.getElementById("userInfo").textContent = user.username;
+            document.getElementById("logoutBtn").style.display = "inline";
+            if (user.role === "admin") document.getElementById("adminLink").classList.remove("hidden");
+            showPortfolio();
+            await loadPortfolio();
+            loadTransactions();
+            connectWS();  // ← подключаем WebSocket после загрузки
+        } catch (e) { showDenied(); }
+    }
 
-                const table = document.getElementById("txTable");
-                while (table.rows.length > 1) table.deleteRow(1);
+    function showDenied() {
+        document.getElementById("accessDenied").style.display = "block";
+        document.getElementById("portfolioContent").style.display = "none";
+    }
+    function showPortfolio() {
+        document.getElementById("accessDenied").style.display = "none";
+        document.getElementById("portfolioContent").style.display = "block";
+    }
 
-                if (data.transactions) {
-                    data.transactions.forEach(tx => {
-                        const row = table.insertRow();
-                        const typeClass = tx.type === "buy" ? "positive" : "negative";
-                        const typeLabel = tx.type === "buy" ? "🟢 Купля" : "🔴 Продажа";
-                        const qty = parseFloat(tx.quantity) || 0;
-                        const price = parseFloat(tx.assetPrice) || 0;
-                        const total = parseFloat(tx.totalUsdt) || 0;
-                        const d = new Date(tx.createdAt);
-                        const timeStr = isNaN(d.getTime()) ? tx.createdAt : d.toLocaleString();
-                        row.innerHTML = `
-                            <td class="${typeClass}">${typeLabel}</td>
-                            <td>${tx.assetSymbol}</td>
-                            <td>${qty.toFixed(6)}</td>
-                            <td>${price.toFixed(4)}</td>
-                            <td>${total.toFixed(2)}</td>
-                            <td>${timeStr}</td>
-                        `;
-                    });
-                }
-            } catch (e) { console.error(e); }
-        }
+    async function loadPortfolio() {
+        try {
+            const resp = await fetch("/api/trading/portfolio", { headers: { "Authorization": "Bearer " + token } });
+            if (!resp.ok) return;
+            portfolioData = await resp.json();
+            renderPortfolio();
+        } catch (e) { console.error(e); }
+    }
 
-        function openSell(assetID, symbol, price) {
-            tradeType = "sell";
-            tradeAssetID = assetID;
-            tradeAssetPrice = price;
-            document.getElementById("tradeTitle").textContent = "🔴 Продажа";
-            document.getElementById("tradeSymbol").textContent = symbol;
-            document.getElementById("tradePrice").textContent = price.toFixed(4);
-            document.getElementById("tradeBtn").className = "btn-sell";
-            document.getElementById("tradeBtn").textContent = "Продать";
-            document.getElementById("tradeQuantity").value = "";
-            document.getElementById("tradeTotal").textContent = "0";
-            document.getElementById("tradeModal").classList.add("active");
-        }
+    function renderPortfolio() {
+    if (!portfolioData) return;
 
-        function closeModal() { document.getElementById("tradeModal").classList.remove("active"); }
+    let totalValue = 0, totalPnL = 0;
+    const items = portfolioData.items || [];
 
-        document.getElementById("tradeQuantity").addEventListener("input", function() {
-            document.getElementById("tradeTotal").textContent = ((parseFloat(this.value) || 0) * tradeAssetPrice).toFixed(2);
+    const table = document.getElementById("portfolioTable");
+    while (table.rows.length > 1) table.deleteRow(1);
+
+    items.forEach(item => {
+        const qty = parseFloat(item.quantity) || 0;
+        const avg = parseFloat(item.avg_buy_price) || 0;
+        const cur = parseFloat(item.current_price) || 0;
+        const val = qty * cur;
+        const pl = val - (qty * avg);
+        const plp = avg > 0 ? ((cur - avg) / avg * 100) : 0;
+        
+        totalValue += val;
+        totalPnL += pl;
+
+        const row = table.insertRow();
+        const pnlClass = pl >= 0 ? "positive" : "negative";
+        row.innerHTML = `
+            <td><strong>${item.symbol}</strong></td>
+            <td>${qty.toFixed(6)}</td>
+            <td>$${avg.toFixed(4)}</td>
+            <td>$${cur.toFixed(4)}</td>
+            <td>$${val.toFixed(2)}</td>
+            <td class="${pnlClass}">${pl >= 0 ? "+" : "-"}$${Math.abs(pl).toFixed(2)} (${plp.toFixed(2)}%)</td>
+            <td><button class="btn btn-red" onclick="openSell('${item.asset_id}','${item.symbol}',${cur})">Продать</button></td>
+        `;
+    });
+
+    const bal = parseFloat(portfolioData.balance_usdt) || 0;
+    document.getElementById("balance").textContent = "$" + bal.toLocaleString();
+    document.getElementById("totalValue").textContent = "$" + totalValue.toLocaleString();
+    const pnlEl = document.getElementById("totalPnL");
+    pnlEl.textContent = (totalPnL >= 0 ? "+" : "-") + "$" + Math.abs(totalPnL).toLocaleString();
+    pnlEl.className = "card-value " + (totalPnL >= 0 ? "positive" : "negative");
+}
+    async function loadTransactions() {
+        try {
+            const resp = await fetch("/api/trading/transactions", { headers: { "Authorization": "Bearer " + token } });
+            if (!resp.ok) return;
+            const data = await resp.json();
+
+            const table = document.getElementById("txTable");
+            while (table.rows.length > 1) table.deleteRow(1);
+
+            if (data.transactions) {
+                data.transactions.forEach(tx => {
+                    const row = table.insertRow();
+                    const isBuy = tx.type === "buy";
+                    const typeClass = isBuy ? "positive" : "negative";
+                    const typeLabel = isBuy ? "Покупка" : "Продажа";
+                    const qty = parseFloat(tx.quantity) || 0;
+                    const price = parseFloat(tx.asset_price) || 0;
+                    const total = parseFloat(tx.total_usdt) || 0;
+                    const d = new Date(tx.created_at);
+                    const timeStr = isNaN(d.getTime()) ? tx.created_at : d.toLocaleString();
+                    row.innerHTML = `
+                        <td class="${typeClass}">${typeLabel}</td>
+                        <td>${tx.asset_symbol}</td>
+                        <td>${qty.toFixed(6)}</td>
+                        <td>$${price.toFixed(4)}</td>
+                        <td>$${total.toFixed(2)}</td>
+                        <td>${timeStr}</td>
+                    `;
+                });
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function openSell(assetID, symbol, price) {
+        tradeType = "sell";
+        tradeAssetID = assetID;
+        tradeAssetPrice = price;
+        document.getElementById("tradeTitle").textContent = "Продажа";
+        document.getElementById("tradeSymbol").textContent = symbol;
+        document.getElementById("tradePrice").textContent = "$" + price.toFixed(4);
+        document.getElementById("tradeBtn").className = "btn btn-red";
+        document.getElementById("tradeBtn").textContent = "Продать";
+        document.getElementById("tradeQuantity").value = "";
+        document.getElementById("tradeTotal").textContent = "$0";
+        document.getElementById("tradeModal").classList.add("active");
+    }
+
+    function closeModal() { document.getElementById("tradeModal").classList.remove("active"); }
+
+    document.getElementById("tradeQuantity").addEventListener("input", function() {
+        document.getElementById("tradeTotal").textContent = "$" + ((parseFloat(this.value) || 0) * tradeAssetPrice).toFixed(2);
+    });
+
+    async function executeTrade() {
+        const quantity = document.getElementById("tradeQuantity").value;
+        if (!quantity || parseFloat(quantity) <= 0) return;
+        const resp = await fetch("/api/trading/sell", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+            body: JSON.stringify({ asset_id: tradeAssetID, quantity })
         });
+        if (resp.ok) { closeModal(); await loadPortfolio(); loadTransactions(); }
+        else { const d = await resp.json().catch(()=>({})); alert("Ошибка: " + (d.error || "неизвестно")); }
+    }
 
-        async function executeTrade() {
-            const quantity = document.getElementById("tradeQuantity").value;
-            if (!quantity || parseFloat(quantity) <= 0) return;
-            const endpoint = tradeType === "buy" ? "/api/trading/buy" : "/api/trading/sell";
-            const resp = await fetch(endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                body: JSON.stringify({ asset_id: tradeAssetID, quantity })
-            });
-            if (resp.ok) { closeModal(); loadPortfolio(); loadTransactions(); }
-            else { const d = await resp.json().catch(()=>({})); alert("❌ " + (d.error || "Ошибка")); }
-        }
+    async function showCat() {
+        const cat = document.getElementById("catContainer");
+        cat.classList.remove("hidden");
+        await fetch("/api/trading/balance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+            body: JSON.stringify({ amount: "100" })
+        });
+        setTimeout(() => { cat.classList.add("hidden"); loadPortfolio(); }, 3000);
+    }
 
-        async function showCat() {
-            const cat = document.getElementById("catContainer");
-            cat.classList.remove("hidden");
-            const resp = await fetch("/api/trading/balance", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                body: JSON.stringify({ amount: "100" })
-            });
-            if (resp.ok) setTimeout(() => { cat.classList.add("hidden"); loadPortfolio(); }, 3000);
-        }
+    function logout() { localStorage.removeItem("token"); window.location.href = "/login.html"; }
 
-        function logout() { localStorage.removeItem("token"); window.location.href = "/login.html"; }
-
-        checkAccess();
-    </script>
+    checkAccess();
+</script>
 </body>
 </html>

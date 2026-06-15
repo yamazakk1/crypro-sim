@@ -1,80 +1,90 @@
 version: '3.9'
 
 services:
-  gateway-service:
-    build: ./services/gateway
+  gateway:
+    build: 
+      context: .
+      dockerfile: ./services/gateway/Dockerfile
     ports:
       - "${GATEWAY_PORT}:${GATEWAY_PORT}"
-    depends_on:
-      - ${AUTH_SERVICE_NAME}
-      - ${MARKET_SERVICE_NAME}
-      - ${TRADING_SERVICE_NAME}
-      - ${ASSET_SERVICE_NAME}
-      - ${WS_HUB_SERVICE_NAME}
     environment:
       PORT: ${GATEWAY_PORT}
-      AUTH_ADDR: ${AUTH_SERVICE_NAME}:${AUTH_PORT}
-      MARKET_ADDR: ${MARKET_SERVICE_NAME}:${MARKET_PORT}
-      TRADING_ADDR: ${TRADING_SERVICE_NAME}:${TRADING_PORT}
-      ASSET_ADDR: ${ASSET_SERVICE_NAME}:${ASSET_PORT}
-      WS_HUB_ADDR: ${WS_HUB_SERVICE_NAME}:${WS_HUB_PORT}
+      AUTH_ADDR: auth-service:${AUTH_PORT}
+      ASSET_ADDR: asset-service:${ASSET_PORT}
+      MARKET_ADDR: market-service:${MARKET_PORT}
+      TRADING_ADDR: trading-service:${TRADING_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - auth-service
 
   auth-service:
-    build: ./services/auth
+    build: 
+      context: .
+      dockerfile: ./services/auth/Dockerfile
     ports:
       - "${AUTH_PORT}:${AUTH_PORT}"
+    environment:
+      PORT: ${AUTH_PORT}
+      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
-      postgres:
-        condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
-      PORT: ${AUTH_PORT}
 
   market-service:
-    build: ./services/market
+    build:
+      context: .
+      dockerfile: ./services/market/Dockerfile
     ports:
       - "${MARKET_PORT}:${MARKET_PORT}"
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
       PORT: ${MARKET_PORT}
-
+      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      REDIS_ADDR: redis:6379
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
   trading-service:
-    build: ./services/trading
+    build:
+      context: .
+      dockerfile: ./services/trading/Dockerfile
     ports:
       - "${TRADING_PORT}:${TRADING_PORT}"
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
       PORT: ${TRADING_PORT}
-
-  asset-service:
-    build: ./services/asset
-    ports:
-      - "${ASSET_PORT}:${ASSET_PORT}"
+      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
-      PORT: ${ASSET_PORT}
+      migrate:
+        condition: service_completed_successfully
+  redis:
+    image: redis:7-alpine
+    ports: 
+      - 6379:6379
 
-  ws-hub-service:
-    build: ./services/ws_hub
-    ports:
+  ws-hub:
+    build:
+      context: .
+      dockerfile: ./services/ws_hub/Dockerfile
+    ports: 
       - "${WS_HUB_PORT}:${WS_HUB_PORT}"
-    depends_on:
-      redis:
-        condition: service_healthy
     environment:
       PORT: ${WS_HUB_PORT}
-      REDIS_URL: ${REDIS_SERVICE_NAME}:${REDIS_PORT}
+      REDIS_ADDR: redis:6379
+    depends_on:
+      - redis
+  asset-service:
+    build:
+      context: .
+      dockerfile: ./services/asset/Dockerfile
+    ports:
+      - "${ASSET_PORT}:${ASSET_PORT}"
+    environment:
+      PORT: ${ASSET_PORT}
+      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   postgres:
     image: postgres:16
@@ -92,19 +102,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  
-  redis:
-    image: redis:8-alpine
-    restart: always
-    ports:
-      - "${REDIS_PORT}:6379"
-    volumes:
-    - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
 
   migrate:
     image: migrate/migrate 
@@ -112,13 +109,24 @@ services:
       - ./migrations:/migrations
     command:
       - -path=/migrations
-      - -database=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_SERVICE_NAME}:5432/${POSTGRES_DB}?sslmode=disable
+      - -database=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       - up
     depends_on:
       postgres:
         condition: service_healthy
     restart: on-failure
-  
+  seed:
+    build:
+      context: .
+      dockerfile: ./cmd/seed/Dockerfile
+    environment:
+      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    profiles:
+      - seed
+    restart: "no"
+
 volumes:
   postgres_data:
-  redis_data:

@@ -1,19 +1,19 @@
 package models
 
 type PortfolioItem struct {
-    AssetID        string
-    Symbol         string
-    Quantity       float64
-    AvgBuyPrice    float64
-    CurrentPrice   float64
-    TotalValue     float64
-    ProfitLoss     float64
-    ProfitLossPct  float64
+    AssetID        string  `json:"asset_id"`
+    Symbol         string  `json:"symbol"`
+    Quantity       float64 `json:"quantity"`
+    AvgBuyPrice    float64 `json:"avg_buy_price"`
+    CurrentPrice   float64 `json:"current_price"`
+    TotalValue     float64 `json:"total_value"`
+    ProfitLoss     float64 `json:"profit_loss"`
+    ProfitLossPct  float64 `json:"profit_loss_percent"`
 }
 
 type Portfolio struct {
-    Items          []PortfolioItem
-    TotalValue     float64
-    BalanceUSDT    float64
-    TotalProfitLoss float64
+    Items           []PortfolioItem `json:"items"`
+    TotalValue      float64         `json:"total_value_usdt"`
+    BalanceUSDT     float64         `json:"balance_usdt"`
+    TotalProfitLoss float64         `json:"total_profit_loss"`
 }

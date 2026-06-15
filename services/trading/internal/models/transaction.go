@@ -1,13 +1,13 @@
 package models
 
 type Transaction struct {
-    ID          string
-    UserID      string
-    AssetID     string
-    AssetSymbol string
-    Type        string 
-    Quantity    float64
-    AssetPrice  float64
-    TotalUSDT   float64
-    CreatedAt   string
+    ID          string  `json:"id"`
+    UserID      string  `json:"user_id"`
+    AssetID     string  `json:"asset_id"`
+    AssetSymbol string  `json:"asset_symbol"`
+    Type        string  `json:"type"`
+    Quantity    float64 `json:"quantity"`
+    AssetPrice  float64 `json:"asset_price"`
+    TotalUSDT   float64 `json:"total_usdt"`
+    CreatedAt   string  `json:"created_at"`
 }

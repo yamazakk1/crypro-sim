@@ -2,120 +2,69 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Админ-панель | CryptoSim</title>
+    <title>Админ | CryptoSim</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 30px auto; padding: 20px; }
-        h1 { color: #333; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background: #4CAF50; color: white; }
-        tr:nth-child(even) { background: #f9f9f9; }
-        input { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
-        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; color: white; }
-        .btn-create { background: #4CAF50; padding: 10px 20px; }
-        .btn-deact { background: #ff9800; }
-        .btn-act { background: #2196F3; }
-        .btn-del { background: #f44336; }
-        .btn-back { background: #666; }
-        button:hover { opacity: 0.8; }
-        .create-form { background: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
-        .error { color: #f44336; }
-        .success { color: #4CAF50; }
-        #accessDenied { display: none; background: #ffebee; border: 2px solid #f44336; border-radius: 8px; padding: 40px; text-align: center; margin: 50px 0; }
-        #accessDenied h2 { color: #f44336; font-size: 28px; }
-        #accessDenied a { color: #2196F3; font-size: 16px; }
+        :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #c9d1d9; --text-secondary: #8b949e; --green: #3fb950; --red: #f85149; --blue: #58a6ff; --orange: #d2991d; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-weight: 700; font-size: 18px; color: var(--green); }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+        table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 16px 0; }
+        th, td { padding: 12px 16px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border); }
+        th { background: #21262d; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; }
+        tr:hover { background: #1c2128; }
+        .btn { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px; color: white; }
+        .btn-green { background: #238636; border-color: #238636; }
+        .btn-red { background: #da3633; border-color: #da3633; }
+        .btn-blue { background: #1f6feb; border-color: #1f6feb; }
+        .btn-gray { background: #21262d; }
+        input { padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; margin: 4px; }
+        input:focus { outline: none; border-color: var(--blue); }
+        .form-row { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        #accessDenied { display: none; text-align: center; padding: 80px 20px; }
+        #accessDenied h2 { color: var(--red); font-size: 32px; margin-bottom: 16px; }
+        #accessDenied a { color: var(--blue); }
         #adminContent { display: none; }
     </style>
 </head>
 <body>
-    <div id="accessDenied">
-        <h2>🚫 Access Denied</h2>
-        <p>У вас нет прав администратора.</p>
-        <p><a href="/assets.html">← Вернуться к списку валют</a></p>
-    </div>
-
+    <div id="accessDenied"><h2>🚫 Доступ запрещён</h2><p>Только для администраторов.</p><p><a href="/assets.html">← На рынок</a></p></div>
     <div id="adminContent">
-        <h1>⚙️ Админ-панель</h1>
-        <a href="/assets.html"><button class="btn-back">← К валютам</button></a>
-        
-        <div class="create-form">
-            <h3>Создать новую валюту</h3>
-            <input id="symbol" placeholder="Символ (BTC)">
-            <input id="fullname" placeholder="Название (Bitcoin)">
-            <input id="price" placeholder="Начальная цена (100.00)" type="number" step="any">
-            <button class="btn-create" onclick="createAsset()">Создать</button>
-            <p id="createResult"></p>
+        <div class="header"><span class="brand">CryptoSim</span> · Админ-панель <a href="/assets.html" style="color:var(--blue);margin-left:12px;">← На рынок</a></div>
+        <div class="container">
+            <div class="form-row">
+                <input id="symbol" placeholder="Символ (BTC)">
+                <input id="fullname" placeholder="Название (Bitcoin)">
+                <input id="price" placeholder="Цена (100)" type="number" step="any" style="width:120px;">
+                <button class="btn btn-green" onclick="create()">Создать</button>
+            </div>
+            <p id="createMsg" style="font-size:14px;"></p>
+            <table id="tbl"><tr><th>Символ</th><th>Название</th><th>Статус</th><th>Действия</th></tr></table>
         </div>
-
-        <h3>Управление валютами</h3>
-        <table id="adminTable">
-            <tr><th>Символ</th><th>Название</th><th>Статус</th><th>Действия</th></tr>
-        </table>
     </div>
-
     <script>
         const token = localStorage.getItem("token");
-
-        async function checkAccess() {
-            if (!token) { showDenied(); return; }
-            try {
-                const resp = await fetch("/getme", { headers: { "Authorization": "Bearer " + token } });
-                if (!resp.ok) { localStorage.removeItem("token"); showDenied(); return; }
-                const user = await resp.json();
-                user.role === "admin" ? (showAdmin(), loadAdmin()) : showDenied();
-            } catch (e) { showDenied(); }
+        async function check() {
+            if (!token) { document.getElementById("accessDenied").style.display="block"; return; }
+            const r = await fetch("/getme", { headers: { "Authorization": "Bearer "+token } });
+            if (!r.ok || (await r.json()).role !== "admin") { document.getElementById("accessDenied").style.display="block"; return; }
+            document.getElementById("adminContent").style.display="block"; load();
         }
-
-        function showDenied() { document.getElementById("accessDenied").style.display = "block"; document.getElementById("adminContent").style.display = "none"; }
-        function showAdmin() { document.getElementById("accessDenied").style.display = "none"; document.getElementById("adminContent").style.display = "block"; }
-
-        async function loadAdmin() {
-            const resp = await fetch("/api/assets");
-            const data = await resp.json();
-            const table = document.getElementById("adminTable");
-            while (table.rows.length > 1) table.deleteRow(1);
-            data.assets.forEach(a => {
-                const row = table.insertRow();
-                row.innerHTML = `
-                    <td><strong>${a.symbol}</strong></td>
-                    <td>${a.full_name}</td>
-                    <td>${a.is_active ? '✅ Активна' : '❌ Неактивна'}</td>
-                    <td>
-                        <button class="${a.is_active ? 'btn-deact' : 'btn-act'}" onclick="toggleAsset('${a.id}', ${a.is_active})">${a.is_active ? 'Деактивировать' : 'Активировать'}</button>
-                        <button class="btn-del" onclick="deleteAsset('${a.id}')">Удалить</button>
-                    </td>`;
-            });
+        async function load() {
+            const r = await fetch("/api/assets"); const d = await r.json(); const t = document.getElementById("tbl");
+            while (t.rows.length>1) t.deleteRow(1);
+            d.assets.forEach(a => { const row = t.insertRow(); row.innerHTML = `<td>${a.symbol}</td><td>${a.full_name}</td><td>${a.is_active?'✅':'❌'}</td><td><button class="btn ${a.is_active?'btn-blue':'btn-green'}" onclick="toggle('${a.id}',${a.is_active})">${a.is_active?'Деактивировать':'Активировать'}</button> <button class="btn btn-red" onclick="del('${a.id}')">Удалить</button></td>`; });
         }
-
-        async function createAsset() {
-            const symbol = document.getElementById("symbol").value.trim();
-            const fullname = document.getElementById("fullname").value.trim();
-            const price = document.getElementById("price").value || "100.00";
-            const r = document.getElementById("createResult");
-            if (!symbol || !fullname) { r.className = "error"; r.textContent = "❌ Символ и название обязательны"; return; }
-            const resp = await fetch("/api/assets", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                body: JSON.stringify({ symbol, full_name: fullname, initial_price: parseFloat(price) })
-            });
-            if (resp.status === 201) { r.className = "success"; r.textContent = "✅ Валюта создана!"; setTimeout(() => location.reload(), 500); }
-            else { const data = await resp.json().catch(() => ({})); r.className = "error"; r.textContent = "❌ " + (data.error || "Ошибка"); }
+        async function create() {
+            const s = document.getElementById("symbol").value.trim(), f = document.getElementById("fullname").value.trim(), p = document.getElementById("price").value||"100";
+            if (!s||!f) return;
+            const r = await fetch("/api/assets", { method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}, body:JSON.stringify({symbol:s,full_name:f,initial_price:+p}) });
+            document.getElementById("createMsg").textContent = r.status===201 ? "Создано!" : "Ошибка"; load();
         }
-
-        async function toggleAsset(id, active) {
-            await fetch(`/api/assets/${id}/${active ? "deactivate" : "activate"}`, { method: "POST", headers: { "Authorization": "Bearer " + token } });
-            location.reload();
-        }
-
-        async function deleteAsset(id) {
-            if (confirm("Удалить валюту?")) {
-                await fetch(`/api/assets/${id}`, { method: "DELETE", headers: { "Authorization": "Bearer " + token } });
-                location.reload();
-            }
-        }
-
-        checkAccess();
+        async function toggle(id, active) { await fetch(`/api/assets/${id}/${active?"deactivate":"activate"}`, { method:"POST", headers:{"Authorization":"Bearer "+token} }); load(); }
+        async function del(id) { if (confirm("Удалить?")) { await fetch(`/api/assets/${id}`, { method:"DELETE", headers:{"Authorization":"Bearer "+token} }); load(); } }
+        check();
     </script>
 </body>
 </html>

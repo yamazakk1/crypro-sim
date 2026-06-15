@@ -2,10 +2,11 @@ package repository
 
 import (
     "context"
-    "crypto-simulator/services/trading/internal/models"
+    "fmt"
 
     "github.com/jackc/pgx/v5"
     "github.com/jackc/pgx/v5/pgxpool"
+    "crypto-simulator/services/trading/internal/models"
 )
 
 type PortfolioRepo struct {
@@ -27,15 +28,14 @@ func (r *PortfolioRepo) UpdateBalance(ctx context.Context, tx pgx.Tx, userID str
     return err
 }
 
-func (r *PortfolioRepo) GetUserAsset(ctx context.Context, userID, assetID string) (float64, float64, error) {
-    var quantity, avgPrice float64
-    err := r.pool.QueryRow(ctx,
+func (r *PortfolioRepo) GetUserAsset(ctx context.Context, userID, assetID string) (quantity, avgPrice float64, err error) {
+    err = r.pool.QueryRow(ctx,
         `SELECT quantity, avg_buy_price FROM user_assets WHERE user_id = $1 AND asset_id = $2`,
         userID, assetID).Scan(&quantity, &avgPrice)
     if err == pgx.ErrNoRows {
         return 0, 0, nil
     }
-    return quantity, avgPrice, err
+    return
 }
 
 func (r *PortfolioRepo) UpsertAsset(ctx context.Context, tx pgx.Tx, userID, assetID string, quantity, avgPrice float64) error {
@@ -56,20 +56,20 @@ func (r *PortfolioRepo) DeleteAsset(ctx context.Context, tx pgx.Tx, userID, asse
 func (r *PortfolioRepo) GetPortfolio(ctx context.Context, userID string) (*models.Portfolio, error) {
     balance, err := r.GetBalance(ctx, userID)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("get balance: %w", err)
     }
 
     rows, err := r.pool.Query(ctx,
         `SELECT ua.asset_id, a.symbol, ua.quantity, ua.avg_buy_price,
                 COALESCE(
                     (SELECT price_usdt FROM market_prices WHERE asset_id = ua.asset_id ORDER BY recorded_at DESC LIMIT 1),
-                    a.initial_price, 0
+                    (SELECT initial_price FROM assets WHERE id = ua.asset_id), 0
                 ) as current_price
          FROM user_assets ua
          JOIN assets a ON ua.asset_id = a.id
          WHERE ua.user_id = $1 AND ua.quantity > 0`, userID)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("query portfolio: %w", err)
     }
     defer rows.Close()
 
@@ -77,7 +77,7 @@ func (r *PortfolioRepo) GetPortfolio(ctx context.Context, userID string) (*model
     for rows.Next() {
         var item models.PortfolioItem
         if err := rows.Scan(&item.AssetID, &item.Symbol, &item.Quantity, &item.AvgBuyPrice, &item.CurrentPrice); err != nil {
-            return nil, err
+            return nil, fmt.Errorf("scan portfolio item: %w", err)
         }
         item.TotalValue = item.Quantity * item.CurrentPrice
         item.ProfitLoss = item.TotalValue - (item.Quantity * item.AvgBuyPrice)
