@@ -71,11 +71,6 @@ services:
       migrate:
         condition: service_completed_successfully
 
-  redis:
-    image: redis:7-alpine
-    ports: 
-      - "6379:6379"
-
   ws-hub:
     build:
       context: .
@@ -88,22 +83,6 @@ services:
     depends_on:
       - redis
 
-  postgres:
-    image: postgres:16
-    restart: always
-    environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: vova123
-      POSTGRES_DB: maindb
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myuser -d maindb"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   migrate:
     image: migrate/migrate 
