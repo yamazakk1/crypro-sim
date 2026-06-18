@@ -6,14 +6,14 @@ services:
       context: .
       dockerfile: ./services/gateway/Dockerfile
     ports:
-      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+      - "8080:8080"
     environment:
-      PORT: ${GATEWAY_PORT}
-      AUTH_ADDR: auth-service:${AUTH_PORT}
-      ASSET_ADDR: asset-service:${ASSET_PORT}
-      MARKET_ADDR: market-service:${MARKET_PORT}
-      TRADING_ADDR: trading-service:${TRADING_PORT}
-      JWT_SECRET: ${JWT_SECRET}
+      PORT: "8080"
+      AUTH_ADDR: auth-service:8081
+      ASSET_ADDR: asset-service:8082
+      MARKET_ADDR: market-service:8083
+      TRADING_ADDR: trading-service:8084
+      JWT_SECRET: my-secret-key-for-course-project
     depends_on:
       - auth-service
 
@@ -22,11 +22,11 @@ services:
       context: .
       dockerfile: ./services/auth/Dockerfile
     ports:
-      - "${AUTH_PORT}:${AUTH_PORT}"
+      - "8081:8081"
     environment:
-      PORT: ${AUTH_PORT}
-      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
-      JWT_SECRET: ${JWT_SECRET}
+      PORT: "8081"
+      DB_DSN: postgres://myuser:vova123@postgres:5432/maindb?sslmode=disable
+      JWT_SECRET: my-secret-key-for-course-project
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -36,69 +36,71 @@ services:
       context: .
       dockerfile: ./services/market/Dockerfile
     ports:
-      - "${MARKET_PORT}:${MARKET_PORT}"
+      - "8083:8083"
     environment:
-      PORT: ${MARKET_PORT}
-      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      PORT: "8083"
+      DB_DSN: postgres://myuser:vova123@postgres:5432/maindb?sslmode=disable
       REDIS_ADDR: redis:6379
     depends_on:
       migrate:
         condition: service_completed_successfully
+
   trading-service:
     build:
       context: .
       dockerfile: ./services/trading/Dockerfile
     ports:
-      - "${TRADING_PORT}:${TRADING_PORT}"
+      - "8084:8084"
     environment:
-      PORT: ${TRADING_PORT}
-      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      PORT: "8084"
+      DB_DSN: postgres://myuser:vova123@postgres:5432/maindb?sslmode=disable
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+  asset-service:
+    build:
+      context: .
+      dockerfile: ./services/asset/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: "8082"
+      DB_DSN: postgres://myuser:vova123@postgres:5432/maindb?sslmode=disable
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   redis:
     image: redis:7-alpine
     ports: 
-      - 6379:6379
+      - "6379:6379"
 
   ws-hub:
     build:
       context: .
       dockerfile: ./services/ws_hub/Dockerfile
     ports: 
-      - "${WS_HUB_PORT}:${WS_HUB_PORT}"
+      - "8085:8085"
     environment:
-      PORT: ${WS_HUB_PORT}
+      PORT: "8085"
       REDIS_ADDR: redis:6379
     depends_on:
       - redis
-  asset-service:
-    build:
-      context: .
-      dockerfile: ./services/asset/Dockerfile
-    ports:
-      - "${ASSET_PORT}:${ASSET_PORT}"
-    environment:
-      PORT: ${ASSET_PORT}
-      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
 
   postgres:
     image: postgres:16
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: vova123
+      POSTGRES_DB: maindb
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U myuser -d maindb"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -109,23 +111,22 @@ services:
       - ./migrations:/migrations
     command:
       - -path=/migrations
-      - -database=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - -database=postgres://myuser:vova123@postgres:5432/maindb?sslmode=disable
       - up
     depends_on:
       postgres:
         condition: service_healthy
     restart: on-failure
+
   seed:
     build:
       context: .
       dockerfile: ./cmd/seed/Dockerfile
     environment:
-      DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      DB_DSN: postgres://myuser:vova123@postgres:5432/maindb?sslmode=disable
     depends_on:
       migrate:
         condition: service_completed_successfully
-    profiles:
-      - seed
     restart: "no"
 
 volumes:
