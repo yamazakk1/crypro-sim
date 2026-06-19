@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 go build -o /auth ./services/auth
 RUN CGO_ENABLED=0 go build -o /asset ./services/asset
 RUN CGO_ENABLED=0 go build -o /market ./services/market
 RUN CGO_ENABLED=0 go build -o /trading ./services/trading
-RUN CGO_ENABLED=0 go build -o /ws-hub ./services/ws_hub
+RUN CGO_ENABLED=0 go build -o /ws_hub ./services/ws_hub
 RUN CGO_ENABLED=0 go build -o /seed ./cmd/seed
 
 FROM alpine:latest
