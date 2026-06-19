@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: crypto-sim
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DB_DSN
+        fromDatabase:
+          name: crypto-db
+          property: connectionString
+      - key: REDIS_ADDR
+        fromService:
+          name: crypto-redis
+          type: redis
+          property: connectionString
+
+  - type: redis
+    name: crypto-redis
+    ipAllowList: []
+
+databases:
+  - name: crypto-db
+    databaseName: crypto_sim
+    user: crypto_user
