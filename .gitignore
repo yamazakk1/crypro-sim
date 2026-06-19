@@ -7,11 +7,6 @@ bin/
 dist/
 
 
-pkg/pb/
-
-docker-compose.override.yml
-
-
 .idea/
 .vscode/
 *.swp
