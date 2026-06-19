@@ -4,7 +4,7 @@
 
 ## 🚀 Демо
 
-Приложение развёрнуто на Render: https://crypto-sim.onrender.com/assets.html
+Приложение развёрнуто на Render: [https://crypto-sim.onrender.com/assets.html](https://crypro-sim.onrender.com/assets.html)
 
 ## 🔑 Тестовые пользователи
 
