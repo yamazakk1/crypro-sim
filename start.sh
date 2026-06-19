@@ -10,6 +10,7 @@ done
 
 /app/seed
 
+
 export REDIS_ADDR=$(echo "$REDIS_ADDR" | sed 's|redis://||' | sed 's|.*@||')
 echo "Redis addr: $REDIS_ADDR"
 
@@ -22,7 +23,8 @@ PORT=8081 /app/auth &
 PORT=8082 /app/asset &
 PORT=8083 /app/market &
 PORT=8084 /app/trading &
-PORT=8085 /app/ws-hub &
-PORT=8080 /app/gateway &
+PORT=8085 /app/ws_hub &
+
+PORT=$PORT /app/gateway &
 
 wait
