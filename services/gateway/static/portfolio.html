@@ -142,21 +142,21 @@
     let tradeType = "sell", tradeAssetID = "", tradeAssetPrice = 0;
     let portfolioData = null;
 
-    // WebSocket для real-time обновления
     function connectWS() {
-        const ws = new WebSocket("ws://localhost:8085/ws");
+        const wsUrl = window.location.hostname === "localhost" 
+            ? "ws://localhost:8085/ws" 
+            : `wss://${window.location.host}/ws`;
+        const ws = new WebSocket(wsUrl);
         ws.onmessage = (e) => {
             try {
                 const p = JSON.parse(e.data);
                 if (portfolioData && portfolioData.items) {
-                    let changed = false;
                     portfolioData.items.forEach(item => {
                         if (item.asset_id === p.asset_id) {
                             item.current_price = parseFloat(p.price_usdt);
-                            changed = true;
                         }
                     });
-                    if (changed) renderPortfolio();
+                    renderPortfolio();
                 }
             } catch(ex) {}
         };
@@ -175,7 +175,7 @@
             showPortfolio();
             await loadPortfolio();
             loadTransactions();
-            connectWS();  // ← подключаем WebSocket после загрузки
+            connectWS();
         } catch (e) { showDenied(); }
     }
 
@@ -198,45 +198,46 @@
     }
 
     function renderPortfolio() {
-    if (!portfolioData) return;
+        if (!portfolioData) return;
 
-    let totalValue = 0, totalPnL = 0;
-    const items = portfolioData.items || [];
+        let totalValue = 0, totalPnL = 0;
+        const items = portfolioData.items || [];
 
-    const table = document.getElementById("portfolioTable");
-    while (table.rows.length > 1) table.deleteRow(1);
+        const table = document.getElementById("portfolioTable");
+        while (table.rows.length > 1) table.deleteRow(1);
 
-    items.forEach(item => {
-        const qty = parseFloat(item.quantity) || 0;
-        const avg = parseFloat(item.avg_buy_price) || 0;
-        const cur = parseFloat(item.current_price) || 0;
-        const val = qty * cur;
-        const pl = val - (qty * avg);
-        const plp = avg > 0 ? ((cur - avg) / avg * 100) : 0;
-        
-        totalValue += val;
-        totalPnL += pl;
+        items.forEach(item => {
+            const qty = parseFloat(item.quantity) || 0;
+            const avg = parseFloat(item.avg_buy_price) || 0;
+            const cur = parseFloat(item.current_price) || 0;
+            const val = qty * cur;
+            const pl = val - (qty * avg);
+            const plp = avg > 0 ? ((cur - avg) / avg * 100) : 0;
+            
+            totalValue += val;
+            totalPnL += pl;
 
-        const row = table.insertRow();
-        const pnlClass = pl >= 0 ? "positive" : "negative";
-        row.innerHTML = `
-            <td><strong>${item.symbol}</strong></td>
-            <td>${qty.toFixed(6)}</td>
-            <td>$${avg.toFixed(4)}</td>
-            <td>$${cur.toFixed(4)}</td>
-            <td>$${val.toFixed(2)}</td>
-            <td class="${pnlClass}">${pl >= 0 ? "+" : "-"}$${Math.abs(pl).toFixed(2)} (${plp.toFixed(2)}%)</td>
-            <td><button class="btn btn-red" onclick="openSell('${item.asset_id}','${item.symbol}',${cur})">Продать</button></td>
-        `;
-    });
+            const row = table.insertRow();
+            const pnlClass = pl >= 0 ? "positive" : "negative";
+            row.innerHTML = `
+                <td><strong>${item.symbol}</strong></td>
+                <td>${qty.toFixed(6)}</td>
+                <td>$${avg.toFixed(4)}</td>
+                <td>$${cur.toFixed(4)}</td>
+                <td>$${val.toFixed(2)}</td>
+                <td class="${pnlClass}">${pl >= 0 ? "+" : "-"}$${Math.abs(pl).toFixed(2)} (${plp.toFixed(2)}%)</td>
+                <td><button class="btn btn-red" onclick="openSell('${item.asset_id}','${item.symbol}',${cur})">Продать</button></td>
+            `;
+        });
 
-    const bal = parseFloat(portfolioData.balance_usdt) || 0;
-    document.getElementById("balance").textContent = "$" + bal.toLocaleString();
-    document.getElementById("totalValue").textContent = "$" + totalValue.toLocaleString();
-    const pnlEl = document.getElementById("totalPnL");
-    pnlEl.textContent = (totalPnL >= 0 ? "+" : "-") + "$" + Math.abs(totalPnL).toLocaleString();
-    pnlEl.className = "card-value " + (totalPnL >= 0 ? "positive" : "negative");
-}
+        const bal = parseFloat(portfolioData.balance_usdt) || 0;
+        document.getElementById("balance").textContent = "$" + bal.toLocaleString();
+        document.getElementById("totalValue").textContent = "$" + totalValue.toLocaleString();
+        const pnlEl = document.getElementById("totalPnL");
+        pnlEl.textContent = (totalPnL >= 0 ? "+" : "-") + "$" + Math.abs(totalPnL).toLocaleString();
+        pnlEl.className = "card-value " + (totalPnL >= 0 ? "positive" : "negative");
+    }
+
     async function loadTransactions() {
         try {
             const resp = await fetch("/api/trading/transactions", { headers: { "Authorization": "Bearer " + token } });
@@ -316,6 +317,6 @@
     function logout() { localStorage.removeItem("token"); window.location.href = "/login.html"; }
 
     checkAccess();
-</script>
+    </script>
 </body>
 </html>

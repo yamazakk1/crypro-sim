@@ -97,7 +97,10 @@
         function rl(s) { const m = ranges.find(r => r.s === s); return m ? m.label : s/3600+"ч"; }
 
         function connectWS() {
-            const ws = new WebSocket("ws://localhost:8085/ws");
+            const wsUrl = window.location.hostname === "localhost" 
+                ? "ws://localhost:8085/ws" 
+                : `wss://${window.location.host}/ws`;
+            const ws = new WebSocket(wsUrl);
             ws.onmessage = (e) => {
                 try { const p = JSON.parse(e.data); priceMap[p.asset_id] = { price: +p.price_usdt, change: +p.change_percent }; updateTable(); if (selectedAsset) updateChart(); } catch(ex) {}
             };

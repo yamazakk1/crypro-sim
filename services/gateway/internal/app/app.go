@@ -6,6 +6,9 @@ import (
 	"log"
 	"net/http"
 
+	"net/http/httputil"
+    "net/url"
+
 	pbAsset "crypto-simulator/pkg/pb/asset"
 	pbAuth "crypto-simulator/pkg/pb/auth"
 	pbMarket "crypto-simulator/pkg/pb/market"
@@ -113,7 +116,9 @@ func NewGatewayApp() (*GatewayApp, error) {
 		Addr:    cfg.Port,
 		Handler: mux,
 	}
-
+	wsURL, _ := url.Parse("http://localhost:8085")
+	mux.Handle("/ws", httputil.NewSingleHostReverseProxy(wsURL))
+	
 	mux.Handle("GET /api/trading/portfolio", authMiddleware(http.HandlerFunc(gatewayHandler.HandleGetPortfolio)))
 	mux.Handle("POST /api/trading/buy", authMiddleware(http.HandlerFunc(gatewayHandler.HandleBuy)))
 	mux.Handle("POST /api/trading/sell", authMiddleware(http.HandlerFunc(gatewayHandler.HandleSell)))
